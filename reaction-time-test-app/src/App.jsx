@@ -1,35 +1,55 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
 
 function App() {
-  const [count, setCount] = useState(0)
+  // 맨 처음 상태
+  const [state, setState] = useState("ready");
+  const [record, setRecord] = useState({
+    start: null, end: null
+  })
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+  let instruction;
+  let actionButton;
+  if(state === "ready") {
+    instruction = <h1>버튼을 누르면 시작합니다.</h1>;
+    actionButton = <button onClick={() => {
+      setState("start");
+      setTimeout(() => {
+        setState("test")
+        // start 기록 (객체이기 때문에)
+        // setRecord(r => { return { ...r, start: Date.now }})
+        setRecord(r => ({ ...r, start: Date.now() }))   // 처음에 start, end 값을 복사하고 start가 덮어씌워짐
+      }, 2000)
+    }}>시작</button>;
+  }
+  else if(state === "start") {
+    instruction = <h1>버튼이 녹색이 되면 누르세요.</h1>;
+    actionButton = <button>클릭</button>;
+  }
+  else if(state === "test") {
+    instruction = <h1>클릭하세요!</h1>;
+    actionButton = <button 
+                    style={{ background: "green"}}
+                    onClick={() => {
+                      setState("end")
+                      // end 기록
+                      setRecord(r => ({...r, end: Date.now() }) )
+                    }}
+                   >클릭</button>;
+  }
+  else if(state === "end") {
+    // 렌더링 전에 setState함수를 호출하게 되면 리랜더링 무한반복임.... 절대 하지 말 것!
+    
+    // 최종 결과 계산
+    const reactionTime = record.end - record.start;
+
+    instruction = <h1>반응 속도: {reactionTime}ms</h1>;
+    actionButton = <button onClick={() => setState("ready")}>다시 시작</button>;
+  }
+
+  return <div>
+    { instruction }
+    { actionButton }
+  </div>;
 }
 
-export default App
+export default App;
