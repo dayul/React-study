@@ -1,7 +1,38 @@
 import { useState, useRef } from "react";
 import { v4 } from "uuid"; // 임시 primary key
 
-function TodoList({ id, title, todos, removeTodoList, addTodoToList }) {
+function TodoItem({
+  id,
+  listId,
+  title,
+  done,
+  removeTodoFromList,
+  toggleCompletionFromTodoList,
+}) {
+  return (
+    <div>
+      <span
+        style={done ? { textDecoration: "line-through" } : {}}
+        onClick={() => {
+          toggleCompletionFromTodoList(listId, id);
+        }}
+      >
+        {title}
+      </span>
+      <button onClick={() => removeTodoFromList(listId, id)}>삭제</button>
+    </div>
+  );
+}
+
+function TodoList({
+  id,
+  title,
+  todos,
+  removeTodoList,
+  addTodoToList,
+  removeTodoFromList,
+  toggleCompletionFromTodoList
+}) {
   // 제어 컴포넌트와 비제어 컴포넌트의 개념
   // 제어 컴포넌트 : 상태 사용(useState)
   // 비제어 컴포넌트 : useRef 사용
@@ -31,9 +62,17 @@ function TodoList({ id, title, todos, removeTodoList, addTodoToList }) {
       </button>
       <hr style={{ color: "gray" }} />
       <button onClick={() => removeTodoList(id)}>리스트 삭제</button>
-      <div> {
-          todos.map(todo => <h1>{todo.title}</h1>)
-        } </div>
+      <div>
+        {todos.map((todo) => (
+          <TodoItem
+            key={todo.id}
+            listId={id}
+            {...todo}
+            removeTodoFromList={removeTodoFromList}
+            toggleCompletionFromTodoList={toggleCompletionFromTodoList}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -54,11 +93,46 @@ function TodoApp() {
     setTodoLists((prev) =>
       prev.map((list) => {
         if (list.id === listId) {
-          return { ...list, todos: [...list.todos, todo] };
+          return { ...list, todos: [...list.todos, todo] }; // 객체는 참조값이 변경되어야 리렌더링이 일어남
         }
         return list;
       })
     );
+  };
+
+  const removeTodoFromList = function (listId, todoId) {
+    setTodoLists((prev) =>
+      prev.map((list) => {
+        if (list.id === listId) {
+          return {
+            ...list,
+            todos: list.todos.filter((todo) => todo.id !== todoId),
+          };
+        }
+        return list;
+      })
+    );
+  };
+
+  const toggleCompletionFromTodoList = function (listId, todoId) {
+    setTodoLists((prev) => {
+      return prev.map((list) => {
+        if (list.id === listId) {
+          return {
+            ...list,
+            todos: list.todos.map((todo) => {
+              if (todo.id === todoId) {
+                return {
+                  ...todo,
+                  done: !todo.done, // 반대로!
+                };
+              }
+              return todo;
+            }),
+          };
+        }
+      });
+    });
   };
 
   return (
@@ -93,7 +167,14 @@ function TodoApp() {
       <div>
         {todoLists.map((list) => {
           return (
-            <TodoList key={list.id} {...list} removeTodoList={removeTodoList} addTodoToList={addTodoToList} />
+            <TodoList
+              key={list.id}
+              {...list}
+              removeTodoList={removeTodoList}
+              addTodoToList={addTodoToList}
+              removeTodoFromList={removeTodoFromList}
+              toggleCompletionFromTodoList={toggleCompletionFromTodoList}
+            />
           );
         })}
       </div>
