@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { v4 } from "uuid"; // 임시 primary key
+import { useImmer } from 'use-immer';
 
 function TodoItem({
   id,
@@ -78,7 +79,8 @@ function TodoList({
 }
 
 function TodoApp() {
-  const [todoLists, setTodoLists] = useState([]);
+  // const [todoLists, setTodoLists] = useState([]);
+  const [todoLists, setTodoLists] = useImmer([]);
 
   // 상태값을 저장하지만, 화면에 노출시키지 않을 값들을 관리
   // useState()처럼 불필요한 리렌더링이 일어나지 않음 (효율적)
@@ -86,53 +88,38 @@ function TodoApp() {
   const listTitleInputRef = useRef();
 
   const removeTodoList = function (listId) {
-    setTodoLists((prev) => prev.filter((list) => list.id !== listId));
+    setTodoLists(draft => {
+      const index = draft.findIndex(list => list.id === listId);
+      if(index !== -1) {
+        draft.splice(index, 1);
+      }
+    })
   };
 
   const addTodoToList = function (listId, todo) {
-    setTodoLists((prev) =>
-      prev.map((list) => {
-        if (list.id === listId) {
-          return { ...list, todos: [...list.todos, todo] }; // 객체는 참조값이 변경되어야 리렌더링이 일어남
-        }
-        return list;
-      })
-    );
+    setTodoLists(draft => {
+      const index = draft.findIndex(list => list.id === listId);
+      draft[index].todos.push(todo);
+    })
   };
 
   const removeTodoFromList = function (listId, todoId) {
-    setTodoLists((prev) =>
-      prev.map((list) => {
-        if (list.id === listId) {
-          return {
-            ...list,
-            todos: list.todos.filter((todo) => todo.id !== todoId),
-          };
-        }
-        return list;
-      })
-    );
+    setTodoLists(draft => {
+      const list = draft.find(list => list.id === listId);
+      if(list) {
+        list.todos = list.todos.filter(todo => todo.id !== todoId);
+      }
+    })
   };
 
   const toggleCompletionFromTodoList = function (listId, todoId) {
-    setTodoLists((prev) => {
-      return prev.map((list) => {
-        if (list.id === listId) {
-          return {
-            ...list,
-            todos: list.todos.map((todo) => {
-              if (todo.id === todoId) {
-                return {
-                  ...todo,
-                  done: !todo.done, // 반대로!
-                };
-              }
-              return todo;
-            }),
-          };
-        }
-      });
-    });
+    setTodoLists(draft => {
+      const list = draft.find(list => list.id === listId);
+      if(list) {
+        const todo = list.todos.find(todo => todo.id === todoId);
+        todo.done = !todo.done;
+      }
+    })
   };
 
   return (
