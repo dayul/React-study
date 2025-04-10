@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { v4 } from "uuid"; // 임시 primary key
 import { useImmer } from 'use-immer';
 
@@ -80,12 +80,21 @@ function TodoList({
 
 function TodoApp() {
   // const [todoLists, setTodoLists] = useState([]);
-  const [todoLists, setTodoLists] = useImmer([]);
+  const [todoLists, setTodoLists] = useImmer(() => {
+    // 여기 return값이 초깃값이 됨
+    const savedLists = localStorage.getItem("todoLists");
+    return savedLists ? JSON.parse(savedLists) : [];
+  });
 
   // 상태값을 저장하지만, 화면에 노출시키지 않을 값들을 관리
   // useState()처럼 불필요한 리렌더링이 일어나지 않음 (효율적)
   // 일반적으로 Input 요소룰 저장할 때 사용
   const listTitleInputRef = useRef();
+
+  // 의존 배열에 아무 값이 없으면 때문에 마운트될 때 실행
+  useEffect(() => {
+    localStorage.setItem("todoLists", JSON.stringify(todoLists));
+  }, [todoLists])
 
   const removeTodoList = function (listId) {
     setTodoLists(draft => {
@@ -98,8 +107,9 @@ function TodoApp() {
 
   const addTodoToList = function (listId, todo) {
     setTodoLists(draft => {
-      const index = draft.findIndex(list => list.id === listId);
-      draft[index].todos.push(todo);
+      // const index = draft.findIndex(list => list.id === listId);
+      const list = draft.find(list => list.id === listId);
+      list.todos.push(todo);
     })
   };
 
