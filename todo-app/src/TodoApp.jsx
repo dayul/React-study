@@ -1,150 +1,66 @@
-import { useState, useRef, useEffect } from "react";
-import { v4 } from "uuid"; // 임시 primary key
-import { useImmer } from 'use-immer';
-
-function TodoItem({
-  id,
-  listId,
-  title,
-  done,
-  removeTodoFromList,
-  toggleCompletionFromTodoList,
-}) {
-  return (
-    <div>
-      <span
-        style={done ? { textDecoration: "line-through" } : {}}
-        onClick={() => {
-          toggleCompletionFromTodoList(listId, id);
-        }}
-      >
-        {title}
-      </span>
-      <button onClick={() => removeTodoFromList(listId, id)}>삭제</button>
-    </div>
-  );
-}
-
-function TodoList({
-  id,
-  title,
-  todos,
-  removeTodoList,
-  addTodoToList,
-  removeTodoFromList,
-  toggleCompletionFromTodoList
-}) {
-  // 제어 컴포넌트와 비제어 컴포넌트의 개념
-  // 제어 컴포넌트 : 상태 사용(useState)
-  // 비제어 컴포넌트 : useRef 사용
-  const [todoTitle, setTodoTitle] = useState("");
-
-  return (
-    <div>
-      <h1>{title}</h1>
-      {/* 상태와 input 동기화 */}
-      <input
-        value={todoTitle}
-        onChange={(e) => setTodoTitle(e.target.value)}
-        type="text"
-        placeholder="할 일을 입력하세요."
-      />
-      <button
-        onClick={() => {
-          addTodoToList(id, {
-            id: v4(),
-            title: todoTitle,
-            done: false,
-          });
-          setTodoTitle("");
-        }}
-      >
-        할일 추가
-      </button>
-      <hr style={{ color: "gray" }} />
-      <button onClick={() => removeTodoList(id)}>리스트 삭제</button>
-      <div>
-        {todos.map((todo) => (
-          <TodoItem
-            key={todo.id}
-            listId={id}
-            {...todo}
-            removeTodoFromList={removeTodoFromList}
-            toggleCompletionFromTodoList={toggleCompletionFromTodoList}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
+import { useRef } from "react";
+import { v4 } from "uuid";
+import TodoList from "./components/TodoList";
+import { AppContainer, AddListButton, ListTitleInput, ListsContainer, TodoListContainer } from './styles';
+import { usePersistentTodoLists } from "./hooks";
 
 function TodoApp() {
-  // const [todoLists, setTodoLists] = useState([]);
-  const [todoLists, setTodoLists] = useImmer(() => {
-    // 여기 return값이 초깃값이 됨
-    const savedLists = localStorage.getItem("todoLists");
-    return savedLists ? JSON.parse(savedLists) : [];
-  });
-
-  // 상태값을 저장하지만, 화면에 노출시키지 않을 값들을 관리
-  // useState()처럼 불필요한 리렌더링이 일어나지 않음 (효율적)
-  // 일반적으로 Input 요소룰 저장할 때 사용
+  const [todoLists, setTodoLists] = usePersistentTodoLists();
   const listTitleInputRef = useRef();
 
-  // 의존 배열에 아무 값이 없으면 때문에 마운트될 때 실행
-  useEffect(() => {
-    localStorage.setItem("todoLists", JSON.stringify(todoLists));
-  }, [todoLists])
-
   const removeTodoList = function (listId) {
-    setTodoLists(draft => {
-      const index = draft.findIndex(list => list.id === listId);
-      if(index !== -1) {
+    setTodoLists((draft) => {
+      const index = draft.findIndex((list) => list.id === listId);
+      if (index !== -1) {
         draft.splice(index, 1);
       }
-    })
+    });
   };
 
   const addTodoToList = function (listId, todo) {
-    setTodoLists(draft => {
+    setTodoLists((draft) => {
       // const index = draft.findIndex(list => list.id === listId);
-      const list = draft.find(list => list.id === listId);
+      const list = draft.find((list) => list.id === listId);
       list.todos.push(todo);
-    })
+    });
   };
 
   const removeTodoFromList = function (listId, todoId) {
-    setTodoLists(draft => {
-      const list = draft.find(list => list.id === listId);
-      if(list) {
-        list.todos = list.todos.filter(todo => todo.id !== todoId);
+    setTodoLists((draft) => {
+      const list = draft.find((list) => list.id === listId);
+      if (list) {
+        list.todos = list.todos.filter((todo) => todo.id !== todoId);
       }
-    })
+    });
   };
 
   const toggleCompletionFromTodoList = function (listId, todoId) {
-    setTodoLists(draft => {
-      const list = draft.find(list => list.id === listId);
-      if(list) {
-        const todo = list.todos.find(todo => todo.id === todoId);
+    setTodoLists((draft) => {
+      const list = draft.find((list) => list.id === listId);
+      if (list) {
+        const todo = list.todos.find((todo) => todo.id === todoId);
         todo.done = !todo.done;
       }
-    })
+    });
   };
 
   return (
-    <div>
+    <AppContainer>
       <h1>Todo List</h1>
       {/* ref를 주면 자동 연결 */}
-      <input
+      <ListTitleInput
         ref={listTitleInputRef}
         type="text"
         placeholder="새로운 리스트의 제목을 입력하세요"
       />
-      <button
+      <AddListButton
         onClick={() => {
           const title = listTitleInputRef.current.value;
           if (title.trim().length > 0) {
+            if(todoLists.length >= 4) {
+              alert("리스트의 최대 개수는 4개입니다.");
+              return;
+            }
             setTodoLists((prev) => [
               ...prev,
               {
@@ -160,22 +76,24 @@ function TodoApp() {
         }}
       >
         리스트 추가
-      </button>
-      <div>
+      </AddListButton>
+      <ListsContainer>
         {todoLists.map((list) => {
           return (
-            <TodoList
-              key={list.id}
-              {...list}
-              removeTodoList={removeTodoList}
-              addTodoToList={addTodoToList}
-              removeTodoFromList={removeTodoFromList}
-              toggleCompletionFromTodoList={toggleCompletionFromTodoList}
-            />
+            <TodoListContainer>
+              <TodoList
+                key={list.id}
+                {...list}
+                removeTodoList={removeTodoList}
+                addTodoToList={addTodoToList}
+                removeTodoFromList={removeTodoFromList}
+                toggleCompletionFromTodoList={toggleCompletionFromTodoList}
+              />
+            </TodoListContainer>
           );
         })}
-      </div>
-    </div>
+      </ListsContainer>
+    </AppContainer>
   );
 }
 
