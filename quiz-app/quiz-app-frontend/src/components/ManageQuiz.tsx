@@ -53,6 +53,17 @@ export default function ManageQuiz() {
               </span>
             );
           })}
+          <button
+            onClick={async () => {
+              try {
+                await deleteQuiz(q.id);
+                setQuizzes(quizzes.filter(quiz => q.id !== quiz.id));
+              }
+              catch(err) {
+                console.log(err);
+              }
+            }}
+          >퀴즈 삭제</button>
         </div>
       ))}
     </div>
