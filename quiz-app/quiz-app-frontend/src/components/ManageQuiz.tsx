@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { useNavigate } from 'react-router-dom';
 
 // 타입 별칭 (미리 정해놓는 것)
 type Quiz = {
@@ -30,6 +31,7 @@ const deleteQuiz = async (id: string) => {
 
 export default function ManageQuiz() {
   const [quizzes, setQuizzes] = useState<Quiz[] | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     (async () => {
@@ -42,7 +44,7 @@ export default function ManageQuiz() {
   return (
     <div>
       <h1>퀴즈 관리</h1>
-      <button>새 퀴즈 생성</button>
+      <button onClick={() => navigate('/create')}>새 퀴즈 생성</button>
       {quizzes?.map((q) => (
         <div key={q.id}>
           <h1>{q.question}</h1>
